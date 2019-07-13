@@ -1,0 +1,51 @@
+[[dnas]]
+id = "marketplace-dna"
+file = "./dist/holo-barcelona-hackathon.dna.json"
+hash = "QmDontCheck"
+
+
+
+
+[[agents]]
+id = "test_agent1"
+name = "HoloTester1"
+public_address = "HcScjcgKqXC5pmfvka9DmtEJwVr548yd86UPtJGGoue9ynuikuRTN7oE5zcjgbi"
+keystore_file = "./agent1.keystore"
+
+[[agents]]
+id = "test_agent2"
+name = "HoloTester2"
+public_address = "HcScidPSdAT43q9qirJwt5rHJYjjsvougV3jgSBwdJujszw3bBu5Mktr74Rgnea"
+keystore_file = "./agent2.keystore"
+
+
+
+
+[[instances]]
+id = "instance1"
+dna = "marketplace-dna"
+agent = "test_agent1"
+[instances.storage]
+type = "memory"
+path = "tmp-storage"
+
+[[instances]]
+id = "instance2"
+dna = "marketplace-dna"
+agent = "test_agent2"
+[instances.storage]
+type = "memory"
+path = "tmp-storage"
+
+
+
+
+[[interfaces]]
+id = "http-interface1"
+[interfaces.driver]
+type = "http"
+port = 3000
+[[interfaces.instances]]
+id = "instance1"
+[[interfaces.instances]]
+id = "instance2"
