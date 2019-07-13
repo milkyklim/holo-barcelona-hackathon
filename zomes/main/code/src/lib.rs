@@ -1,3 +1,4 @@
+#![feature(vec_remove_item)]
 #![feature(try_from, proc_macro_hygiene)]
 #[macro_use]
 extern crate hdk;
@@ -9,13 +10,20 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
+mod marketplace;
+use marketplace::{TradeState, ActionType};
+
+mod matchmaking;
+mod trade;
+mod trade_action;
+
+use matchmaking::{TradeProposal};
+use trade::{Trade};
+
+
 use hdk::{
-    AGENT_ADDRESS,
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
-    holochain_json_api::{
-        error::JsonError, json::JsonString,
-    },
     holochain_persistence_api::{
         cas::content::{AddressableContent, Address},
     },
@@ -27,28 +35,12 @@ use hdk::{
     },
 };
 
-
 use hdk_proc_macros::zome;
 
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
-pub struct TradeProposal {
-    seller: Address,
-    name_of_item: String,
-    description: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
-pub struct Trade {
-    seller: Address,
-    buyer: Address,
-    created_at: u32,
-}
-
 #[zome]
 mod main {
 
@@ -87,64 +79,17 @@ mod main {
 
     #[zome_fn("hc_public")]
     fn create_trade_proposal(name_of_item: String, description: String) -> ZomeApiResult<Address> {
-        let trade_proposal_data = TradeProposal {
-            seller: AGENT_ADDRESS.to_string().into(),
-            name_of_item,
-            description,
-        };
-
-        let entry = Entry::App("trade_proposal".into(), trade_proposal_data.into());
-        let trade_proposal_address = hdk::commit_entry(&entry)?;
-
-        let anchor_entry = Entry::App(
-            "anchor".into(),
-            // NOTE: check naming
-            // NOTE: into?
-            "trade_proposals".into(),
-        );
-        let anchor_address = hdk::commit_entry(&anchor_entry)?;
-
-        hdk::link_entries(
-            &anchor_address,
-            &trade_proposal_address,
-            "has_trade_proposal",
-            "",
-        )?;
-        
-        Ok(trade_proposal_address)
+        matchmaking::handle_create_trade_proposal(name_of_item, description)
     }
 
     #[zome_fn("hc_public")]
     fn accept_trade_proposal(trade_proposal_address: Address, created_at: u32) -> ZomeApiResult<Address> {
-	let trade_proposal: TradeProposal = hdk::utils::get_as_type(trade_proposal_address.clone())?;
-
-	let trade_data = Trade {
-            seller: trade_proposal.seller,
-            buyer: AGENT_ADDRESS.to_string().into(),
-            created_at,
-        };
-
-        let trade_entry = Entry::App(
-            "trade".into(),
-            trade_data.into()
-        );
-
-        let trade_address = hdk::commit_entry(&trade_entry)?;
-
-        hdk::link_entries(
-            &trade_proposal_address,
-            &trade_address,
-            "from_trade_proposal",
-            ""
-        )?;
-
-	Ok(trade_address)
+        matchmaking::handle_accept_trade_proposal(trade_proposal_address, created_at)
     }
 
     #[zome_fn("hc_public")]
-    // NOTE: WTF?
     pub fn check_responses(trade_proposal_address: Address) -> ZomeApiResult<Vec<Trade>> {
-        hdk::utils::get_links_and_load_type(&trade_proposal_address, LinkMatch::Exactly("from_trade_proposal".into()), LinkMatch::Any)
+        matchmaking::handle_check_responses(trade_proposal_address)
     }
 
     #[zome_fn("hc_public")]
