@@ -37,6 +37,13 @@ use hdk::{
 
 use hdk_proc_macros::zome;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GetResponse<T> {
+    pub entry: T,
+    pub address: Address
+}
+
+
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
@@ -98,16 +105,21 @@ mod main {
     }
 
     #[zome_fn("hc_public")]
-    fn get_trade_proposals() -> ZomeApiResult<Vec<TradeProposal>> {
+    fn get_trade_proposals() -> ZomeApiResult<Vec<GetResponse<TradeProposal>>> {
         let anchor_address = Entry::App(
             "anchor".into(),
             "trade_proposals".into()
         ).address();
 
-        hdk::utils::get_links_and_load_type(
+        Ok(hdk::utils::get_links_and_load_type(
             &anchor_address, 
-            LinkMatch::Exactly("has_proposal"), // the link type to match,
+            LinkMatch::Exactly("has_trade_proposal"), // the link type to match,
             LinkMatch::Any,
+        )?.into_iter().map(|proposal: TradeProposal| {
+            let address = Entry::App("trade_proposal".into(), proposal.clone().into()).address();
+            GetResponse{entry: proposal, address}
+
+        }).collect()
         )
     }
 

@@ -23,9 +23,9 @@ static COMMANDS: &[(&str, &str)] = &[
     // ("moves",            "Display the set of moves this game supports"),
     // ("make_move",        "Make a move in this game, usage: make_move <move_json>"),
  
-    // ("create_proposal",  "Publicly publish that you are looking for someone to play with. Usage: post_propoal <message>"),
-    // ("accept_proposal",   "Accept a propsal. This will start a new game. Usage: accept_proposal <proposal_hash>"),
-    // ("get_proposals",    "Get all of the public proposals that are current"),
+    ("create_trade_proposal",  "Publicly propose what you are willing to sell . Usage: create_trade_proposal <name> <description>"),
+    ("accept_trade_proposal",   "Accept a trade propsal. This will match trade. Usage: accept_trade_proposal <proposal_hash>"),
+    ("get_trade_proposals",    "Get all of the public trade proposals that are current"),
     // ("check_responses",  "Given a proposal hash find the responses. Usage: check_responses <proposal_hash>"),
     // ("remove_proposal",  "Remove a proposal that you authored given its hash. Usage: remove_proposal <proposal_hash>"),    
  
@@ -43,9 +43,9 @@ fn main() -> io::Result<()> {
     // let render_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
 
     // matchmaking funcs
-    // let create_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_proposal".into());
-    // let get_proposals = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "get_proposals".into());
-    // let accept_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "accept_proposal".into());
+    let create_trade_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_trade_proposal".into());
+    let get_trade_proposals = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "get_trade_proposals".into());
+    let accept_trade_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "accept_trade_proposal".into());
     // let check_responses = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "check_responses".into());
     // let _remove_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "remove_proposal".into());
    
@@ -57,7 +57,7 @@ fn main() -> io::Result<()> {
     println!("{}", repeat('#').take(70).collect::<String>());
     println!("CLI interface for marketplace written using the Holochain Generic Game framework.");
     println!("Enter \"help\" for a list of commands.");
-    println!("Use \"create_proposal <agent_id>\" or \"accept_proposal <game_address>\" to start or accept trade.");
+    println!("Use \"create_trade_proposal <name>\" or \"accept_trade_proposal <trade_proposal_address>\" to start or accept trade.");
     println!("Press Ctrl-D or enter \"quit\" to exit.");
     println!("{}", repeat('#').take(70).collect::<String>());
     println!("");
@@ -78,7 +78,7 @@ fn main() -> io::Result<()> {
 
     interface.set_prompt("No trade> ")?;
 
-    let mut current_game: Option<String> = None;
+    let mut current_trade: Option<String> = None;
 
     while let ReadResult::Input(line) = interface.read_line()? {
 
@@ -99,10 +99,10 @@ fn main() -> io::Result<()> {
             println!();
             Ok(())
         }
-        "accept_proposal" => {
+        "accept_trade_proposal" => {
             if is_hash(args) {
-                    println!("Setting current game hash to {}", args);
-                    current_game = Some(args.into());
+                    println!("Setting current trade hash to {}", args);
+                    current_trade = Some(args.into());
                 Ok(())
             } else {
                     Err("argument must be a valid address".into())
@@ -154,21 +154,22 @@ fn main() -> io::Result<()> {
                     // Err("No game set to make moves on. use the \"join_game\" command.".into())
             // }
         // },
-        // "create_proposal" => {
-            // println!("creating proposal with message {:?}", args);
-            // let result = create_proposal(json!({"message": args}));
-            // println!("Create result: {:?}", result);
-            // Ok(())
-        // },
-        // "get_proposals" => {
-            // let result = get_proposals(json!({})).unwrap();
-            // println!("Current game proposals: \n");
-            // result.as_array().unwrap().iter().for_each(|r| {
-                // println!("[{}] : {{ Agent: {}, Message: {} }}", r["address"].as_str().unwrap(), r["entry"]["agent"], r["entry"]["message"]);
-            // });
-            // println!("\n");
-            // Ok(())
-        // },
+        "create_trade_proposal" => {
+            println!("creating proposal with name and description {:?}", args);
+            let result = create_trade_proposal(json!({"name_of_item": args, "description":""}));
+            println!("Create result: {:?}", result);
+            Ok(())
+        },
+        "get_trade_proposals" => {
+            let result = get_trade_proposals(json!({})).unwrap();
+            println!("Current trade proposals: \n");
+            println!("result {:?}: \n", result);
+            result.as_array().unwrap().iter().for_each(|r| {
+                println!("[{}] : {{ Seller: {}, Name of item: {} }}", r["address"].as_str().unwrap(), r["entry"]["seller"], r["entry"]["name_of_item"]);
+            });
+            println!("\n");
+            Ok(())
+        },
         // "accept_proposal" => {
             // accept_proposal(json!({"proposal_addr": args, "created_at": current_timestamp()})).map(|game_addr| {
                 // println!("Proposal accepted. Game created with address: {}", game_addr);
@@ -228,48 +229,48 @@ fn main() -> io::Result<()> {
  * Returns functions to make calls to a particular zome function on a url
  */
 fn holochain_call_generator(
-	url: reqwest::Url, 
-	instance: String,
-	zome: String,
-	func: String,
+        url: reqwest::Url, 
+        instance: String,
+        zome: String,
+        func: String,
 ) -> Box<Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
 
-	let client = reqwest::Client::new();
+        let client = reqwest::Client::new();
 
-	let make_rpc_call = move |params| {
-		json!({
-			"jsonrpc": "2.0",
-			"id": 0,
-			"method": "call",
-			"params": {
-				"instance_id": instance,
-				"zome": zome,
-				"function": func,
-				"args": params
-			}
-		})
-	};
+        let make_rpc_call = move |params| {
+                json!({
+                        "jsonrpc": "2.0",
+                        "id": 0,
+                        "method": "call",
+                        "params": {
+                                "instance_id": instance,
+                                "zome": zome,
+                                "function": func,
+                                "args": params
+                        }
+                })
+        };
 
-	Box::new(move |params| {
-		let call_result: serde_json::Value = client.post(url.clone())
-		    .json(&make_rpc_call(params))
-		    .send().map_err(|e| e.to_string())?
-		    .json()
-		    .map(|r: serde_json::Value| {
-		    	r["result"].clone()
-		    })
-		    .map(|s| serde_json::from_str(
+        Box::new(move |params| {
+                let call_result: serde_json::Value = client.post(url.clone())
+                    .json(&make_rpc_call(params))
+                    .send().map_err(|e| e.to_string())?
+                    .json()
+                    .map(|r: serde_json::Value| {
+                            r["result"].clone()
+                    })
+                    .map(|s| serde_json::from_str(
                 s.as_str().expect(&format!("Holochain did not return a string result: {}", s))
             ).expect(&format!("Holochain did not return a valid stringified JSON result: {}", s)))
-		    .map_err(|e| e.to_string())?;
+                    .map_err(|e| e.to_string())?;
 
-		// deal with the json encoded holochain error responses
-		if let Some(inner_result) = call_result.get("Ok") {
-			Ok(inner_result.clone())
-		} else {
-			Err(call_result["Err"].to_string())
-		}
-	})
+                // deal with the json encoded holochain error responses
+                if let Some(inner_result) = call_result.get("Ok") {
+                        Ok(inner_result.clone())
+                } else {
+                        Err(call_result["Err"].to_string())
+                }
+        })
 
 }
 
