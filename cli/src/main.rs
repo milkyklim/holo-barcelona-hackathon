@@ -101,8 +101,9 @@ fn main() -> io::Result<()> {
         }
         "accept_trade_proposal" => {
             if is_hash(args) {
-                    println!("Setting current trade hash to {}", args);
-                    current_trade = Some(args.into());
+                println!("Setting current trade hash to {}", args);
+                current_trade = Some(args.into());
+                accept_trade_proposal(json!({"trade_proposal_address": args, "created_at": current_timestamp()}));
                 Ok(())
             } else {
                     Err("argument must be a valid address".into())

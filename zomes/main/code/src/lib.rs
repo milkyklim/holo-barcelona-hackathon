@@ -111,16 +111,20 @@ mod main {
             "trade_proposals".into()
         ).address();
 
-        Ok(hdk::utils::get_links_and_load_type(
+        let trade_proposals = hdk::utils::get_links_and_load_type(
             &anchor_address, 
             LinkMatch::Exactly("has_trade_proposal"), // the link type to match,
             LinkMatch::Any,
-        )?.into_iter().map(|proposal: TradeProposal| {
+        )?.into_iter().filter_map(|proposal: TradeProposal| {
             let address = Entry::App("trade_proposal".into(), proposal.clone().into()).address();
-            GetResponse{entry: proposal, address}
+            let trades = matchmaking::handle_check_responses(address.clone());
+            match trades.unwrap().len() {
+                0 => Some(GetResponse{entry: proposal, address}),
+                _ => None,
+            }
+            }).collect();
 
-        }).collect()
-        )
+        Ok(trade_proposals)
     }
 
     #[entry_def]
@@ -136,7 +140,7 @@ mod main {
                 Ok(())
             },
             links: [
-		from!(
+                from!(
 		    "trade_proposal",
 		    link_type: "from_trade_proposal",
 		    validation_package: || {
