@@ -85,6 +85,7 @@ pub fn handle_accept_trade_proposal(trade_proposal_address: Address, created_at:
         "from_trade_proposal",
         ""
     )?;
+    hdk::debug("accept trade proposal success!").unwrap();
 
     Ok(trade_address)
 }
@@ -92,3 +93,7 @@ pub fn handle_accept_trade_proposal(trade_proposal_address: Address, created_at:
 pub fn handle_check_responses(trade_proposal_address: Address) -> ZomeApiResult<Vec<Trade>> {
     hdk::utils::get_links_and_load_type(&trade_proposal_address, LinkMatch::Exactly("from_trade_proposal".into()), LinkMatch::Any)
 }
+
+/* 
+ * Utils
+ */

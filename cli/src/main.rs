@@ -40,7 +40,7 @@ fn main() -> io::Result<()> {
     // let valid_moves = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "get_valid_moves".into());
     // let make_move = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "make_move".into());
     // let create_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_game".into());
-    // let render_game = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
+    let render_trade = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "render_state".into());
 
     // matchmaking funcs
     let create_trade_proposal = holochain_call_generator(cli.url.clone(), cli.instance.clone(), "main".into(), "create_trade_proposal".into());
@@ -209,18 +209,19 @@ fn main() -> io::Result<()> {
             println!("Error: {}", e)
         }
 
-        // if let Some(current_game_string) = current_game.clone() {
-            // interface.set_prompt(&format!("{}> ", current_game_string))?;
-            // match render_game(json!({"game_address": current_game_string.clone()})) {
-                // Ok(render_result) => {
-                    // println!("{}", render_result.as_str().unwrap());
-                // },
-                // Err(_e) => {
-                    // println!("No game is currently visible with that address.");
-                    // current_game = None;
-                // }
-            // }
-        // }
+        if let Some(current_trade_string) = current_trade.clone() {
+            println!("current trade string: {}", current_trade_string);
+            interface.set_prompt(&format!("{}> ", current_trade_string))?;
+            match render_trade(json!({"trade_address": current_trade_string.clone()})) {
+                Ok(render_result) => {
+                    println!("{}", render_result.as_str().unwrap());
+                },
+                Err(_e) => {
+                    println!("No trade is currently visible with that address.");
+                    current_trade = None;
+                }
+            }
+        }
 	}
     Ok(())
 }

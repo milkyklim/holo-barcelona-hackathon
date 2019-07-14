@@ -57,7 +57,7 @@ mod main {
     }
 
     #[entry_def]
-     fn trade_proposal_entry_def() -> ValidatingEntryType {
+    fn trade_proposal_entry_def() -> ValidatingEntryType {
         entry!(
             name: "trade_proposal",
             description: "Represents a trade proposal",
@@ -82,6 +82,22 @@ mod main {
                 }
             }
         )
+    }
+
+    #[entry_def]
+    fn trade_action_entry_def() -> ValidatingEntryType {
+        trade_action::definition()
+    }
+
+    #[zome_fn("hc_public")]
+    fn get_state(trade_address: Address) -> ZomeApiResult<TradeState> {
+        trade::get_state(&trade_address)
+    }
+
+    #[zome_fn("hc_public")]
+    fn render_state(trade_address: Address) -> ZomeApiResult<String> {
+        hdk::debug(format!("trade_address: {}", trade_address));
+        Ok(trade::get_state(&trade_address)?.render())
     }
 
     #[zome_fn("hc_public")]

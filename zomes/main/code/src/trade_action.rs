@@ -41,6 +41,7 @@ pub fn definition() -> ValidatingEntryType {
                     let mut local_chain = validation_data.package.source_chain_entries
                             .ok_or("Could not retrieve source chain")?;
                     hdk::debug(format!("{:?}", local_chain))?;
+                    hdk::debug("validated action")?;
 
                     let new_action = Action::from(entry);
 

@@ -29,7 +29,7 @@ impl Action {
         hdk::debug(format!("{:?}", trade_state)).unwrap();
         let _current_role = get_current_role(&trade, &self.author)?;
 
-        // move type specific validation
+        // action type specific validation
         match &self.action_type {
             ActionType::Buy => {
                 // TODO: Check is not bought

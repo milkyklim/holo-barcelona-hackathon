@@ -27,13 +27,15 @@ impl TradeState {
     }
 
     pub fn render(&self) -> String {
-        "".to_string()
+        "render".to_string()
     }
 
     pub fn evolve(&self, trade: Trade, next_action: &Action) -> Self {
         let _current_role = get_current_role(&trade, &next_action.author).unwrap();
         let mut actions = self.clone().actions.clone();
         actions.push(next_action.to_owned());
+
+        hdk::debug("BUY");
 
         match &next_action.action_type {
             ActionType::Buy => {
