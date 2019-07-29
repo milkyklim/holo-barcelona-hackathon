@@ -1,5 +1,5 @@
 #![feature(vec_remove_item)]
-#![feature(try_from, proc_macro_hygiene)]
+#![feature(proc_macro_hygiene)]
 #[macro_use]
 extern crate hdk;
 extern crate hdk_proc_macros;
@@ -20,13 +20,13 @@ mod trade_action;
 use matchmaking::{TradeProposal};
 use trade::{Trade};
 
-
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
     holochain_persistence_api::{
         cas::content::{AddressableContent, Address},
     },
+    holochain_json_api::json::JsonString,
     holochain_core_types::{
         entry::Entry,
         dna::entry_types::Sharing,
@@ -55,6 +55,12 @@ mod main {
     fn genesis() {
         Ok(())
     }
+
+    // This is 0.0.25-alpha1 code
+    // #[init]
+    // fn init() {
+    //     Ok(())
+    // }
 
     #[entry_def]
     fn trade_proposal_entry_def() -> ValidatingEntryType {
@@ -96,7 +102,8 @@ mod main {
 
     #[zome_fn("hc_public")]
     fn render_state(trade_address: Address) -> ZomeApiResult<String> {
-        hdk::debug(format!("trade_address: {}", trade_address));
+        // TODO: I've added '?' in the end not sure if this is the right way to do it
+        // hdk::debug(format!("trade_address: {}", trade_address))?;
         Ok(trade::get_state(&trade_address)?.render())
     }
 
@@ -196,4 +203,10 @@ mod main {
         )
     }
 
+    // This is 0.0.25-alpha1 code
+    // TODO: this should probably be added to necessary validation spots
+    // #[validate_agent]
+    // pub fn validate_agent(_validation_data: hdk::LinkValidationData) {
+    //     Ok(())
+    // }
 }
