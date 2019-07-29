@@ -1,7 +1,11 @@
 use std::io;
 use std::iter::repeat;
-use std::time::{self, SystemTime, UNIX_EPOCH};
-use std::thread;
+use std::time::{
+    // self, 
+    SystemTime, 
+    UNIX_EPOCH
+};
+// use std::thread;
 use serde_json::json;
 use structopt::StructOpt;
 use linefeed::{Interface, ReadResult};
@@ -103,10 +107,12 @@ fn main() -> io::Result<()> {
             if is_hash(args) {
                 println!("Setting current trade hash to {}", args);
                 current_trade = Some(args.into());
-                accept_trade_proposal(json!({"trade_proposal_address": args, "created_at": current_timestamp()}));
+                // TODO: this is the hack to make the code compile 
+                // find the way to handle this problem correctly
+                let _tmp = accept_trade_proposal(json!({"trade_proposal_address": args, "created_at": current_timestamp()}));
                 Ok(())
             } else {
-                    Err("argument must be a valid address".into())
+                Err("argument must be a valid address".into())
             }
         }
         // "new_game" => {
@@ -227,15 +233,13 @@ fn main() -> io::Result<()> {
 }
 
 
-/**
- * Returns functions to make calls to a particular zome function on a url
- */
+// Returns functions to make calls to a particular zome function on a url
 fn holochain_call_generator(
         url: reqwest::Url, 
         instance: String,
         zome: String,
         func: String,
-) -> Box<Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
+) -> Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, String>> {
 
         let client = reqwest::Client::new();
 
@@ -293,7 +297,7 @@ fn is_hash(s: &str) -> bool {
 	s.starts_with("Qm") && s.len() == 46
 }
 
-fn is_agent_addr(s: &str) -> bool {
+fn _is_agent_addr(s: &str) -> bool {
 	s.starts_with("Hc") && s.len() == 63
 }
 
