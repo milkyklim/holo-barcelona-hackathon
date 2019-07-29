@@ -35,7 +35,8 @@ impl TradeState {
         let mut actions = self.clone().actions.clone();
         actions.push(next_action.to_owned());
 
-        hdk::debug("BUY");
+        // TODO: I've added '?' in the end not sure if this is the right way to do it
+        // hdk::debug("BUY")?;
 
         match &next_action.action_type {
             ActionType::Buy => {
