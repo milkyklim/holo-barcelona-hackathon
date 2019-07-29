@@ -163,7 +163,10 @@ fn main() -> io::Result<()> {
         // },
         "create_trade_proposal" => {
             println!("creating proposal with name and description {:?}", args);
-            let result = create_trade_proposal(json!({"name_of_item": args, "description":""}));
+            // TODO: find a better way to split string at the moment we only take first 2 words
+            // IMP: empty description triggers error in accept_trade_proposal
+            let mut args_splitted = args.split_whitespace();
+            let result = create_trade_proposal(json!({"name_of_item": args_splitted.next(), "description": args_splitted.next()}));
             println!("Create result: {:?}", result);
             Ok(())
         },
