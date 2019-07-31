@@ -1,0 +1,14 @@
+version: 2
+
+jobs:
+  build:
+    working_directory: ~/holo-barcelona-hackathon
+    docker:
+    - image: holochain/holonix:latest
+    environment:
+    - PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+    - checkout
+    - run:
+        name: Starting test
+        command: nix-shell https://holochain.love --run 'hc test'
