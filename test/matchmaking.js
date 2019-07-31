@@ -1,21 +1,29 @@
+const {
+    results,
+    lastResult,
+    addressLength,
+    tabLength,
+    createTradeProposal,
+    getTradeProposals,
+    acceptTradeProposal,
+} = require('./utils')
+
+const checkTradeProposalAccepted = async (t, agent, agentName, itemsNumber, discardedAddress) => {
+    // check that agent sees only itemsNumber - 1 trades now
+    totalTradeProposals = await getTradeProposals(agent)
+    t.equal(totalTradeProposals.Ok.length, itemsNumber - 1, `${agentName} can see ${itemsNumber - 1} proposal(s)`)
+    t.equal(totalTradeProposals.Ok[0].address, discardedAddress, `${agentName} sees the correct discarded option`)
+}
+
 module.exports = (scenario) => {
-
-    // constants for all tests
-    const addressLength = 46;
-    const tabLength = 4;
-
     scenario('Alice can create trade proposal', async (s, t, {
         alice,
         bob
     }) => {
-        const address = await alice.callSync('main', 'create_trade_proposal', {
-            name_of_item: 'Socks',
-            description: 'Old and smelly'
-        })
-
-        console.log(JSON.stringify(address, null, tabLength))
-        t.equal(address.Ok.length, addressLength, 'Alice created proposal successfully')
-    });
+        await createTradeProposal(alice, 'Socks', 'Old and smelly')
+        t.equal(lastResult().Ok.length, addressLength, 'Alice created proposal successfully')
+        console.log(JSON.stringify(lastResult(), null, tabLength))
+    })
 
     scenario(
         'Alice creates multiple trade proposals and Bob gets the correct number of them',
@@ -23,10 +31,6 @@ module.exports = (scenario) => {
             alice,
             bob
         }) => {
-
-            // console.log(JSON.stringify(alice, null, tabLength))
-            // console.log(JSON.stringify(bob, null, tabLength))
-
             // create 5 items for proposals
             const items = {
                 'Socks': 'In the original design',
@@ -39,23 +43,20 @@ module.exports = (scenario) => {
             const itemsNumber = Object.keys(items).length;
 
             for (const [item, desc] of Object.entries(items)) {
-                let address = await alice.callSync('main', 'create_trade_proposal', {
-                    name_of_item: item,
-                    description: desc
-                })
-
-                console.log(JSON.stringify(address, null, tabLength))
-                t.equal(address.Ok.length, addressLength, `Alice created ${item} proposal successfully`)
+                await createTradeProposal(alice, item, desc)
+                t.equal(lastResult().Ok.length, addressLength, `Alice created ${item} proposal successfully`)
             }
 
             // let Bob get the total number of entries 
-            const totalTradeProposals = await bob.callSync('main', 'get_trade_proposals', {
-                /* empty */
+            await getTradeProposals(bob)
+            t.equal(lastResult().Ok.length, itemsNumber, `Bob can see all ${itemsNumber} proposals`)
+
+            // print all results
+            results.forEach((result, i) => {
+                console.log(`${i}: ${JSON.stringify(result, null, tabLength)}\n`)
             })
-            t.equal(totalTradeProposals.Ok.length, itemsNumber, `Bob can see all ${itemsNumber} proposals`)
-            console.log(totalTradeProposals.Ok.length == itemsNumber)
         }
-    );
+    )
 
     scenario('Alice creates 2 trade proposals and Bob accepts one trade proposal',
         async (s, t, {
@@ -71,42 +72,34 @@ module.exports = (scenario) => {
             const itemsNumber = Object.keys(items).length;
 
             for (const [item, desc] of Object.entries(items)) {
-                let address = await alice.callSync('main', 'create_trade_proposal', {
-                    name_of_item: item,
-                    description: desc
-                })
-
-                console.log(JSON.stringify(address, null, tabLength))
-                t.equal(address.Ok.length, addressLength, `Alice created ${item} proposal successfully`)
+                await createTradeProposal(alice, item, desc)
+                t.equal(lastResult().Ok.length, addressLength, `Alice created ${item} proposal successfully`)
             }
 
-            let totalTradeProposals = await bob.callSync('main', 'get_trade_proposals', {
-                /* empty */ })
-            console.log(JSON.stringify(totalTradeProposals, null, tabLength))
+            await getTradeProposals(bob)
+            t.equal(lastResult().Ok.length, itemsNumber, `Bob can see ${itemsNumber} proposals`)
+            console.log(JSON.stringify(lastResult(), null, tabLength))
 
-            t.equal(totalTradeProposals.Ok.length, itemsNumber, `Bob can see ${itemsNumber} proposals`)
+            let bobDiscardedAddress = lastResult().Ok[0].address
+            let bobChoiceAddress = lastResult().Ok[1].address
 
-            let bobDiscardedAddress = totalTradeProposals.Ok[0].address
-            let bobChoiceAddress = totalTradeProposals.Ok[1].address
-            let address = await bob.callSync('main', 'accept_trade_proposal', {
-                trade_proposal_address: bobChoiceAddress,
-                created_at: Math.round(Date.now() / 1000)
-            })
-
-            // TODO: refactor and add code to utils.js
-
+            // uses default created_at
+            await acceptTradeProposal(bob, bobChoiceAddress)
             // check that alice sees only itemsNumber - 1 trades now
-            totalTradeProposals = await alice.callSync('main', 'get_trade_proposals', {
-                /* empty */ })
-            t.equal(totalTradeProposals.Ok.length, itemsNumber - 1, `Alice can see ${itemsNumber - 1} proposal(s)`)
-            t.equal(totalTradeProposals.Ok[0].address, bobDiscardedAddress, `Alice sees the correct discarded option`)
-
+            await checkTradeProposalAccepted(t, alice, 'Alice', itemsNumber, bobDiscardedAddress)
             // check that bob sees only itemsNumber - 1 trades now
-            totalTradeProposals = await bob.callSync('main', 'get_trade_proposals', {
-                /* empty */ })
-            t.equal(totalTradeProposals.Ok.length, itemsNumber - 1, `Bob can see ${itemsNumber - 1} proposal(s)`)
-            t.equal(totalTradeProposals.Ok[0].address, bobDiscardedAddress, `Bob sees the correct discarded option`)
+            await checkTradeProposalAccepted(t, bob, 'Bob', itemsNumber, bobDiscardedAddress)
 
+            results.forEach((result, i) => {
+                console.log(`${i}: ${JSON.stringify(result, null, tabLength)}\n`)
+            })
         }
     )
+
+    scenario('Alice creates a trade proposal and tries to accept it herself', async (s, t, {
+        alice,
+        bob
+    }) => {
+        // TODO:
+    })
 }
