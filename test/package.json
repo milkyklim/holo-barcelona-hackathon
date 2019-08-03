@@ -2,11 +2,13 @@
   "scripts": {
     "test": "node index.js | faucet"
   },
-  "devDependencies": {},
   "dependencies": {
     "@holochain/diorama": "^0.2.0-rc.1",
+    "babel-eslint": "^10.0.2",
+    "eslint": "^6.1.0",
     "faucet": "^0.0.1",
     "json3": "*",
+    "prettier": "^1.18.2",
     "sleep": "^6.1.0",
     "tape": "^4.11.0"
   }
