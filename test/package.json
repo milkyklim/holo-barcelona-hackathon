@@ -1,8 +1,11 @@
 {
+  "scripts": {
+    "test": "node index.js | faucet"
+  },
   "devDependencies": {},
   "dependencies": {
     "@holochain/diorama": "^0.2.0-rc.1",
-    "faucet": "0.0.1",
+    "faucet": "^0.0.1",
     "json3": "*",
     "sleep": "^6.1.0",
     "tape": "^4.11.0"

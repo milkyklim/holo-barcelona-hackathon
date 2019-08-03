@@ -22,11 +22,11 @@ const diorama = new Diorama({
   },
   bridges: [],
   debugLog: false,
-  executor: tapeExecutor(require('tape')),
+  executor: tapeExecutor(tape),
   middleware: backwardCompatibilityMiddleware,
 })
 
 // test the matchmaking 
-require('./matchmaking')(diorama.registerScenario)
+require('./test_matchmaking')(diorama.registerScenario)
 
 diorama.run()
