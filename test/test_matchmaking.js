@@ -12,8 +12,7 @@ const createTradeProposals = async (items, seller) => {
 
 module.exports = scenario => {
   scenario('Alice can create trade proposals', async (s, t, { alice }) => {
-    let tradeProposals;
-    tradeProposals = (await getTradeProposals(alice)).Ok;
+    let tradeProposals = (await getTradeProposals(alice)).Ok;
     t.equal(tradeProposals.length, 0, 'There are no trade proposals available');
     let proposalAddress = await createTradeProposal(
       alice,
