@@ -51,16 +51,10 @@ pub struct GetResponse<T> {
 #[zome]
 mod main {
 
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
         Ok(())
     }
-
-    // This is 0.0.25-alpha1 code
-    // #[init]
-    // fn init() {
-    //     Ok(())
-    // }
 
     #[entry_def]
     fn trade_proposal_entry_def() -> ValidatingEntryType {
@@ -164,18 +158,19 @@ mod main {
             },
             links: [
                 from!(
-		    "trade_proposal",
-		    link_type: "from_trade_proposal",
-		    validation_package: || {
-			hdk::ValidationPackageDefinition::Entry
-		    },
-		    validation: | _validation_data: hdk::LinkValidationData| {
-			Ok(())
-		    }
-		)
-	    ]
+		              "trade_proposal",
+		              link_type: "from_trade_proposal",
+		              validation_package: || {
+			              hdk::ValidationPackageDefinition::Entry
+		              },
+		              validation: | _validation_data: hdk::LinkValidationData| {
+			              Ok(())
+		              }
+		        )
+	        ]
         )
     }
+
 
 
     #[entry_def]
@@ -203,10 +198,8 @@ mod main {
         )
     }
 
-    // This is 0.0.25-alpha1 code
-    // TODO: this should probably be added to necessary validation spots
-    // #[validate_agent]
-    // pub fn validate_agent(_validation_data: hdk::LinkValidationData) {
-    //     Ok(())
-    // }
+    #[validate_agent]
+    pub fn validate_agent(_validation_data: hdk::LinkValidationData) {
+        Ok(())
+    }
 }
