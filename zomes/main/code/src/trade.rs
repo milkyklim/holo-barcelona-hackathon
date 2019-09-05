@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use hdk::{
+    utils,
     error::{ZomeApiResult, ZomeApiError},
     holochain_persistence_api::{
         cas::content::{AddressableContent, Address},
@@ -61,6 +62,24 @@ pub fn get_actions(trade_address: &Address) -> ZomeApiResult<Vec<Action>> {
     }
 }
 
+
+pub fn get_state(trade_address: &Address) -> ZomeApiResult<TradeState> {
+    let actions = get_actions(trade_address)?;
+    let trade = get_trade(trade_address)?;
+    let new_state = actions.iter().fold(TradeState::initial(), |state, new_action| state.evolve(trade.clone(), new_action));
+    Ok(new_state)
+}
+
+pub fn get_trade(trade_address: &Address) -> ZomeApiResult<Trade> {
+    utils::get_as_type(trade_address.to_owned())
+}
+
+
+
+/*=============================================
+=            Local chain functions            =
+=============================================*/
+
 pub fn get_state_local_chain(local_chain: Vec<Entry>, trade_address: &Address) -> ZomeApiResult<TradeState> {
     let actions = get_actions_local_chain(local_chain.clone(), trade_address)?;
     let trade = get_trade_local_chain(local_chain, trade_address)?;
@@ -106,3 +125,6 @@ pub fn get_trade_local_chain(local_chain: Vec<Entry>, trade_address: &Address) -
         .next()
         .ok_or(ZomeApiError::HashNotFound)
 }
+
+
+/*=====  End of Local chain functions  ======*/

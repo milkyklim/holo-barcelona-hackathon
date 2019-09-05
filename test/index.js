@@ -1,7 +1,11 @@
 const path = require('path')
 const tape = require('tape')
 
-const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
+const { 
+  Diorama, 
+  tapeExecutor, 
+  backwardCompatibilityMiddleware
+} = require('@holochain/diorama')
 
 process.on('unhandledRejection', error => {
   // Will print "unhandledRejection err is not defined"
@@ -18,18 +22,11 @@ const diorama = new Diorama({
   },
   bridges: [],
   debugLog: false,
-  executor: tapeExecutor(require('tape')),
+  executor: tapeExecutor(tape),
   middleware: backwardCompatibilityMiddleware,
 })
 
-diorama.registerScenario("description of example test", async (s, t, { alice }) => {
-  // Make a call to a Zome function
-  // indicating the function, and passing it an input
-  const addr = await alice.call("my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
-  const result = await alice.call("my_zome", "get_my_entry", {"address": addr.Ok})
-
-  // check for equality of the actual and expected results
-  t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
-})
+// test the matchmaking 
+require('./test_matchmaking')(diorama.registerScenario)
 
 diorama.run()

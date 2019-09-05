@@ -1,5 +1,5 @@
 #![feature(vec_remove_item)]
-#![feature(try_from, proc_macro_hygiene)]
+#![feature(proc_macro_hygiene)]
 #[macro_use]
 extern crate hdk;
 extern crate hdk_proc_macros;
@@ -20,13 +20,13 @@ mod trade_action;
 use matchmaking::{TradeProposal};
 use trade::{Trade};
 
-
 use hdk::{
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
     holochain_persistence_api::{
         cas::content::{AddressableContent, Address},
     },
+    holochain_json_api::json::JsonString,
     holochain_core_types::{
         entry::Entry,
         dna::entry_types::Sharing,
@@ -37,6 +37,13 @@ use hdk::{
 
 use hdk_proc_macros::zome;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GetResponse<T> {
+    pub entry: T,
+    pub address: Address
+}
+
+
 // see https://developer.holochain.org/api/0.0.18-alpha1/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
@@ -44,13 +51,13 @@ use hdk_proc_macros::zome;
 #[zome]
 mod main {
 
-    #[genesis]
-    fn genesis() {
+    #[init]
+    fn init() {
         Ok(())
     }
 
     #[entry_def]
-     fn trade_proposal_entry_def() -> ValidatingEntryType {
+    fn trade_proposal_entry_def() -> ValidatingEntryType {
         entry!(
             name: "trade_proposal",
             description: "Represents a trade proposal",
@@ -77,6 +84,23 @@ mod main {
         )
     }
 
+    #[entry_def]
+    fn trade_action_entry_def() -> ValidatingEntryType {
+        trade_action::definition()
+    }
+
+    #[zome_fn("hc_public")]
+    fn get_state(trade_address: Address) -> ZomeApiResult<TradeState> {
+        trade::get_state(&trade_address)
+    }
+
+    #[zome_fn("hc_public")]
+    fn render_state(trade_address: Address) -> ZomeApiResult<String> {
+        // TODO: I've added '?' in the end not sure if this is the right way to do it
+        // hdk::debug(format!("trade_address: {}", trade_address))?;
+        Ok(trade::get_state(&trade_address)?.render())
+    }
+
     #[zome_fn("hc_public")]
     fn create_trade_proposal(name_of_item: String, description: String) -> ZomeApiResult<Address> {
         matchmaking::handle_create_trade_proposal(name_of_item, description)
@@ -98,17 +122,26 @@ mod main {
     }
 
     #[zome_fn("hc_public")]
-    fn get_trade_proposals() -> ZomeApiResult<Vec<TradeProposal>> {
+    fn get_trade_proposals() -> ZomeApiResult<Vec<GetResponse<TradeProposal>>> {
         let anchor_address = Entry::App(
             "anchor".into(),
             "trade_proposals".into()
         ).address();
 
-        hdk::utils::get_links_and_load_type(
+        let trade_proposals = hdk::utils::get_links_and_load_type(
             &anchor_address, 
-            LinkMatch::Exactly("has_proposal"), // the link type to match,
+            LinkMatch::Exactly("has_trade_proposal"), // the link type to match,
             LinkMatch::Any,
-        )
+        )?.into_iter().filter_map(|proposal: TradeProposal| {
+            let address = Entry::App("trade_proposal".into(), proposal.clone().into()).address();
+            let trades = matchmaking::handle_check_responses(address.clone());
+            match trades.unwrap().len() {
+                0 => Some(GetResponse{entry: proposal, address}),
+                _ => None,
+            }
+            }).collect();
+
+        Ok(trade_proposals)
     }
 
     #[entry_def]
@@ -124,19 +157,20 @@ mod main {
                 Ok(())
             },
             links: [
-		from!(
-		    "trade_proposal",
-		    link_type: "from_trade_proposal",
-		    validation_package: || {
-			hdk::ValidationPackageDefinition::Entry
-		    },
-		    validation: | _validation_data: hdk::LinkValidationData| {
-			Ok(())
-		    }
-		)
-	    ]
+                from!(
+		              "trade_proposal",
+		              link_type: "from_trade_proposal",
+		              validation_package: || {
+			              hdk::ValidationPackageDefinition::Entry
+		              },
+		              validation: | _validation_data: hdk::LinkValidationData| {
+			              Ok(())
+		              }
+		        )
+	        ]
         )
     }
+
 
 
     #[entry_def]
@@ -164,4 +198,8 @@ mod main {
         )
     }
 
+    #[validate_agent]
+    pub fn validate_agent(_validation_data: hdk::LinkValidationData) {
+        Ok(())
+    }
 }
